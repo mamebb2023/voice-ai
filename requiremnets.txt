@@ -4,4 +4,4 @@ livekit-plugins-openai
 livekit-plugins-silero
 
 numpy
-PIL
+Pillow
