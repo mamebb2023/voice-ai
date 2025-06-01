@@ -6,10 +6,6 @@ from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice_assistant import VoiceAssistant
 from livekit.plugins import deepgram, openai, silero
-import os
-from datetime import datetime
-from PIL import Image
-import numpy as np
 
 load_dotenv()
 
@@ -56,17 +52,9 @@ class AssistantFnc(llm.FunctionContext):
                 logger.info("No video frame available")
                 return "No video frame available"
 
-            # Save the image before sending to chat context
-            os.makedirs("image", exist_ok=True)
-            timestamp = datetime.now(datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
-            filename = f"image/image-{timestamp}.jpg"
-            image_array = self.latest_video_frame.to_ndarray(format="rgb24")
-            Image.fromarray(image_array).save(filename)
-            logger.info(f"Image saved to {filename}")
-
             chat_image = llm.ChatImage(image=self.latest_video_frame)
             self.chat_ctx.append(images=[chat_image], role="user")
-            return f"Image captured, saved to {filename}, and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
+            return f"Image captured and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
         except Exception as e:
             logger.error(f"Error in capture_and_add_image: {e}")
             return f"Error: {e}"
