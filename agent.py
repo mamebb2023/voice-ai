@@ -1,11 +1,14 @@
 import asyncio
 import logging
+import os
 from dotenv import load_dotenv
 from typing import Any
 from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice_assistant import VoiceAssistant
 from livekit.plugins import deepgram, openai, silero
+from PIL import Image # Import Pillow for image manipulation
+from datetime import datetime # Import datetime for timestamping
 
 load_dotenv()
 
@@ -36,7 +39,7 @@ class AssistantFnc(llm.FunctionContext):
 
     @llm.ai_callable()
     async def capture_and_add_image(self) -> str:
-        """Capture an image from the video stream and add it to the chat context."""
+        """Capture an image from the video stream, save it, and add it to the chat context."""
         if self.chat_ctx is None:
             logger.error("chat_ctx is not set")
             return "Error: chat_ctx is not set"
@@ -52,9 +55,28 @@ class AssistantFnc(llm.FunctionContext):
                 logger.info("No video frame available")
                 return "No video frame available"
 
+            # Create the images directory if it doesn't exist
+            images_dir = "images"
+            os.makedirs(images_dir, exist_ok=True)
+
+            # Generate a timestamp for the filename
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            filename = f"images/image-{timestamp}.jpg"
+
+            # Convert the LiveKit VideoFrame to a PIL Image and save it
+            # LiveKit VideoFrame's data is typically bytes in RGB or RGBA format
+            # We assume it's RGB for simplicity, adjust if your frames are RGBA
+            pil_image = Image.frombytes(
+                'RGB',
+                (self.latest_video_frame.width, self.latest_video_frame.height),
+                self.latest_video_frame.data,
+            )
+            pil_image.save(filename)
+            logger.info(f"Image saved to {filename}")
+
             chat_image = llm.ChatImage(image=self.latest_video_frame)
             self.chat_ctx.append(images=[chat_image], role="user")
-            return f"Image captured and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
+            return f"Image captured, saved to {filename}, and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
         except Exception as e:
             logger.error(f"Error in capture_and_add_image: {e}")
             return f"Error: {e}"
