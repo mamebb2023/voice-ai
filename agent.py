@@ -1,13 +1,15 @@
 import asyncio
 import logging
-import os
-from datetime import datetime
 from dotenv import load_dotenv
 from typing import Any
 from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice_assistant import VoiceAssistant
 from livekit.plugins import deepgram, openai, silero
+import os
+from datetime import datetime
+from PIL import Image
+import numpy as np
 
 load_dotenv()
 
@@ -23,11 +25,6 @@ class AssistantFnc(llm.FunctionContext):
         self.room: Any = None
         self.latest_video_frame: Any = None
         self.chat_ctx: Any = chat_ctx
-        self._ensure_images_dir()
-
-    def _ensure_images_dir(self):
-        """Ensure the images directory exists."""
-        os.makedirs("images", exist_ok=True)
 
     async def process_video_stream(self, track):
         """Process video stream and store the first video frame."""
@@ -40,25 +37,6 @@ class AssistantFnc(llm.FunctionContext):
                 break  # Process only the first frame
         except Exception as e:
             logger.error(f"Error processing video stream: {e}")
-
-    def _save_image(self, frame: rtc.VideoFrame):
-        """Save the video frame as a JPEG image."""
-        try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            filename = f"images/image_{timestamp}.jpg"
-
-            # Convert the frame to a JPEG buffer
-            buffer = frame.to_jpeg()
-
-            # Save to file
-            with open(filename, "wb") as f:
-                f.write(buffer)
-
-            logger.info(f"Image saved to {filename}")
-            return filename
-        except Exception as e:
-            logger.error(f"Error saving image: {e}")
-            return None
 
     @llm.ai_callable()
     async def capture_and_add_image(self) -> str:
@@ -78,14 +56,17 @@ class AssistantFnc(llm.FunctionContext):
                 logger.info("No video frame available")
                 return "No video frame available"
 
-            # Save the image to disk
-            saved_path = self._save_image(self.latest_video_frame)
-            if not saved_path:
-                return "Error: Could not save the image"
+            # Save the image before sending to chat context
+            os.makedirs("image", exist_ok=True)
+            timestamp = datetime.now(datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
+            filename = f"image/image-{timestamp}.jpg"
+            image_array = self.latest_video_frame.to_ndarray(format="rgb24")
+            Image.fromarray(image_array).save(filename)
+            logger.info(f"Image saved to {filename}")
 
             chat_image = llm.ChatImage(image=self.latest_video_frame)
             self.chat_ctx.append(images=[chat_image], role="user")
-            return f"Image captured and saved as {saved_path}. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
+            return f"Image captured, saved to {filename}, and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
         except Exception as e:
             logger.error(f"Error in capture_and_add_image: {e}")
             return f"Error: {e}"
@@ -149,10 +130,7 @@ async def entrypoint(ctx: JobContext):
 
         assistant.start(ctx.room)
         await asyncio.sleep(1)
-        await assistant.say(
-            "Hi! I am Dr. San and I'll be your personal doctor, how are you feeling today?",
-            allow_interruptions=True,
-        )
+        await assistant.say("Hey, how can I help you today?", allow_interruptions=True)
 
         while True:
             await asyncio.sleep(10)
