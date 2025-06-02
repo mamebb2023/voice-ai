@@ -6,9 +6,6 @@ from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice_assistant import VoiceAssistant
 from livekit.plugins import deepgram, openai, silero
-from datetime import datetime
-import os
-from PIL import Image
 
 load_dotenv()
 
@@ -32,9 +29,8 @@ class AssistantFnc(llm.FunctionContext):
         try:
             async for frame_event in video_stream:
                 self.latest_video_frame = frame_event.frame
-                print("frame", frame_event.frame.data)
                 logger.info(f"Received a frame from track {track.sid}")
-                break
+                break  # Process only the first frame
         except Exception as e:
             logger.error(f"Error processing video stream: {e}")
 
@@ -57,9 +53,8 @@ class AssistantFnc(llm.FunctionContext):
                 return "No video frame available"
 
             chat_image = llm.ChatImage(image=self.latest_video_frame)
-
             self.chat_ctx.append(images=[chat_image], role="user")
-            return f"Image captured and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height} {self.latest_video_frame}"
+            return f"Image captured and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
         except Exception as e:
             logger.error(f"Error in capture_and_add_image: {e}")
             return f"Error: {e}"
