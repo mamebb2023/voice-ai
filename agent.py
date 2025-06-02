@@ -18,32 +18,6 @@ logging.basicConfig(
 logger = logging.getLogger("livekit-agent")
 
 
-def save_photo(video_frame):
-    """Saves a video frame as a JPEG image with a timestamp."""
-    if video_frame is None:
-        # logger.warning("No video frame to save.")
-        return
-
-    print("video_frame", video_frame)
-
-    # Convert the video frame to a PIL Image
-    # Assuming video_frame.width, video_frame.height, and video_frame.data are available
-    image = Image.frombytes(
-        "RGB",
-        (video_frame.width, video_frame.height),
-        video_frame.data,
-        "raw",
-        "RGBX",  # Assuming RGBX format based on common LiveKit video frames
-        0,
-        1,
-    )
-
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    filename = f"images/image-{timestamp}.jpg"
-    image.save(filename, "JPEG")
-    # logger.info(f"Image saved to {filename}")
-
-
 class AssistantFnc(llm.FunctionContext):
     def __init__(self, chat_ctx: Any) -> None:
         super().__init__()
@@ -60,10 +34,22 @@ class AssistantFnc(llm.FunctionContext):
         try:
             async for frame_event in video_stream:
                 self.latest_video_frame = frame_event.frame
-                print("frame", frame_event)
+
+                image = Image.frombytes(
+                    "RGB",
+                    (self.latest_video_frame.width, self.latest_video_frame.height),
+                    self.latest_video_frame.data,
+                    "raw",
+                    "RGBX",
+                    0,
+                    1,
+                )
+
+                timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                filename = f"images/image-{timestamp}.jpg"
+                image.save(filename, "JPEG")
+
                 logger.info(f"Received a frame from track {track.sid}")
-                # Save the image here
-                save_photo(self.latest_video_frame)
                 break  # Process only the first frame
         except Exception as e:
             logger.error(f"Error processing video stream: {e}")
