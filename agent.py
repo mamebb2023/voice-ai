@@ -24,6 +24,8 @@ def save_photo(video_frame):
         # logger.warning("No video frame to save.")
         return
 
+    print("video_frame", video_frame)
+
     # Convert the video frame to a PIL Image
     # Assuming video_frame.width, video_frame.height, and video_frame.data are available
     image = Image.frombytes(
