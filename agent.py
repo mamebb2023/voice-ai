@@ -19,6 +19,30 @@ logging.basicConfig(
 logger = logging.getLogger("livekit-agent")
 
 
+def save_photo(video_frame):
+    """Saves a video frame as a JPEG image with a timestamp."""
+    if video_frame is None:
+        # logger.warning("No video frame to save.")
+        return
+
+    # Convert the video frame to a PIL Image
+    # Assuming video_frame.width, video_frame.height, and video_frame.data are available
+    image = Image.frombytes(
+        "RGB",
+        (video_frame.width, video_frame.height),
+        video_frame.data,
+        "raw",
+        "RGBX",  # Assuming RGBX format based on common LiveKit video frames
+        0,
+        1,
+    )
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    filename = f"images/image-{timestamp}.jpg"
+    image.save(filename, "JPEG")
+    # logger.info(f"Image saved to {filename}")
+
+
 class AssistantFnc(llm.FunctionContext):
     def __init__(self, chat_ctx: Any) -> None:
         super().__init__()
@@ -38,36 +62,10 @@ class AssistantFnc(llm.FunctionContext):
                 print("frame", self.latest_video_frame)
                 logger.info(f"Received a frame from track {track.sid}")
                 # Save the image here
-                self.save_photo(self.latest_video_frame)
+                save_photo(self.latest_video_frame)
                 break  # Process only the first frame
         except Exception as e:
             logger.error(f"Error processing video stream: {e}")
-
-    def save_photo(self, video_frame):
-        """Saves a video frame as a JPEG image with a timestamp."""
-        if video_frame is None:
-            logger.warning("No video frame to save.")
-            return
-
-        try:
-            # Convert the video frame to a PIL Image
-            # Assuming video_frame.width, video_frame.height, and video_frame.data are available
-            image = Image.frombytes(
-                "RGB",
-                (video_frame.width, video_frame.height),
-                video_frame.data,
-                "raw",
-                "RGBX",  # Assuming RGBX format based on common LiveKit video frames
-                0,
-                1,
-            )
-
-            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            filename = f"images/image-{timestamp}.jpg"
-            image.save(filename, "JPEG")
-            logger.info(f"Image saved to {filename}")
-        except Exception as e:
-            logger.error(f"Error saving photo: {e}")
 
     @llm.ai_callable()
     async def capture_and_add_image(self) -> str:
