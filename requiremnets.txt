@@ -3,4 +3,6 @@ livekit-plugins-deepgram~=0.6
 livekit-plugins-openai~=0.7
 livekit-plugins-silero~=0.6
 
+livekit-agents[deepgram,openai,silero,turn-detector]~=1.0
+
 python-dotenv
