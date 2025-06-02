@@ -106,6 +106,7 @@ async def entrypoint(ctx: JobContext):
                 "Ask Smart Follow-Up Questions"
                 "Try to get a sense of how long the symptom has lasted, how severe it is, and if it came with any other changes (fever, appetite loss, stress, etc.). Make it feel like a calm and thoughtful conversation — not a checklist."
                 ""
+                "If you are asked to use anything related to the camera, use the capture_and_add_image function."
                 "After 2–3 exchanges, begin to offer insight"
                 "Once you've gathered enough context, explain what the symptoms might suggest. Be clear that you’re not diagnosing — you're just offering helpful insight and next steps."
                 "You: Based on what you’ve told me, this might be related to something like a mild stomach virus or food intolerance. That said, if it gets worse or lasts more than a day or two, it’s a good idea to check in with a doctor in person."
