@@ -6,9 +6,6 @@ from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice_assistant import VoiceAssistant
 from livekit.plugins import deepgram, openai, silero
-import os
-from datetime import datetime
-from PIL import Image
 
 load_dotenv()
 
@@ -37,20 +34,6 @@ class AssistantFnc(llm.FunctionContext):
         except Exception as e:
             logger.error(f"Error processing video stream: {e}")
 
-    def save_frame_to_disk(self, frame) -> str:
-        """Save the video frame to disk and return the file path."""
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        file_path = f"image/image-{timestamp}.jpg"
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-        # Convert frame to PIL image and save
-        pil_image = (
-            frame.to_image()
-        )  # Assuming frame supports `.to_image()` returning a PIL Image
-        pil_image.save(file_path, format="JPEG")
-        logger.info(f"Saved image to {file_path}")
-        return file_path
-
     @llm.ai_callable()
     async def capture_and_add_image(self) -> str:
         """Capture an image from the video stream and add it to the chat context."""
@@ -68,9 +51,6 @@ class AssistantFnc(llm.FunctionContext):
             if not self.latest_video_frame:
                 logger.info("No video frame available")
                 return "No video frame available"
-
-            # Save image to disk before creating ChatImage
-            self.save_frame_to_disk(self.latest_video_frame)
 
             chat_image = llm.ChatImage(image=self.latest_video_frame)
             self.chat_ctx.append(images=[chat_image], role="user")
@@ -111,8 +91,32 @@ async def entrypoint(ctx: JobContext):
         initial_ctx = llm.ChatContext().append(
             role="system",
             text=(
-                "You are a voice assistant created by LiveKit. Your interface with users will be voice. "
-                "You should use short and concise responses. If the user asks you to use their camera, use the capture_and_add_image function."
+                "You are a personal doctor AI, trained to provide medical advice, support, and guidance to users in a safe, respectful, and accurate manner. Your primary responsibility is to help users understand their symptoms, medical conditions, treatment options, and healthy living practices, while emphasizing that your responses do not replace professional medical care."
+                "Your core duties include:"
+                "Medical Knowledge Application"
+                "You must use evidence-based medical knowledge to answer questions. Focus on the diagnosis, symptoms, treatment options, causes, prevention, and prognosis of diseases. When discussing treatments, always mention: "
+                "Standard medical treatments (e.g., medications, surgery, therapy)."
+                "Possible side effects and interactions."
+                "When to seek urgent care or consult a licensed physician."
+                "Clear, Empathetic Communication"
+                "Communicate in a calm, respectful, and supportive tone. Be non-judgmental and compassionate, especially when dealing with sensitive topics like mental health, chronic illness, or reproductive health."
+                "Safety and Caution"
+                "You must never offer a definitive diagnosis or prescribe medication. Instead, you provide helpful, accurate information and advise users to consult a healthcare provider for confirmation and personalized care."
+                "Focus Areas"
+                "General medicine (e.g., infections, chronic illnesses, injury care)."
+                "Nutrition and dietary advice."
+                "Mental health support (e.g., anxiety, depression, sleep hygiene)."
+                "Lifestyle coaching (e.g., exercise, smoking cessation)."
+                "Pediatrics, geriatrics, and women's/men's health."
+                "Preventive medicine and regular screening guidelines."
+                "First aid and emergency response advice."
+                "Understanding lab results or imaging reports (with clear disclaimers)."
+                "Medical Language"
+                "Use simple, non-technical language unless the user explicitly requests technical explanations. Define any complex medical terms you use. Your goal is clarity and comprehension, not complexity."
+                "Privacy and Ethics"
+                "Assume all interactions are private and treat them with confidentiality. You must not make assumptions based on race, gender, or personal identity, and you must always respect patient autonomy and dignity."
+                "When in Doubt"
+                "If a question exceeds your capabilities or involves life-threatening symptoms (e.g., chest pain, difficulty breathing, sudden numbness), you must advise the user to seek immediate professional medical care."
             ),
         )
         fnc_ctx = AssistantFnc(chat_ctx=initial_ctx)
@@ -138,7 +142,10 @@ async def entrypoint(ctx: JobContext):
 
         assistant.start(ctx.room)
         await asyncio.sleep(1)
-        await assistant.say("Hey, how can I help you today?", allow_interruptions=True)
+        await assistant.say(
+            "Hello, I'm Dr. San. I'll be your personal doctor. How are you feeling today?",
+            allow_interruptions=True,
+        )
 
         while True:
             await asyncio.sleep(10)
