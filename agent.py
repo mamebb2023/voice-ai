@@ -24,8 +24,6 @@ class AssistantFnc(llm.FunctionContext):
         self.room: Any = None
         self.latest_video_frame: Any = None
         self.chat_ctx: Any = chat_ctx
-        # Ensure the 'images' directory exists
-        os.makedirs("images", exist_ok=True)
 
     async def process_video_stream(self, track):
         """Process video stream and store the first video frame."""
@@ -34,22 +32,9 @@ class AssistantFnc(llm.FunctionContext):
         try:
             async for frame_event in video_stream:
                 self.latest_video_frame = frame_event.frame
-
-                image = Image.frombytes(
-                    self.latest_video_frame.type,
-                    (self.latest_video_frame.width, self.latest_video_frame.height),
-                    self.latest_video_frame.data,
-                )
-                print("\n\n\n\n\n\n")
-                print("image", image)
-                print("\n\n\n\n\n\n")
-
-                timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                filename = f"images/image-{timestamp}.jpg"
-                image.save(filename, "JPG")
-
+                print("frame", frame_event.frame.data)
                 logger.info(f"Received a frame from track {track.sid}")
-                break  # Process only the first frame
+                break
         except Exception as e:
             logger.error(f"Error processing video stream: {e}")
 
