@@ -3,4 +3,5 @@ livekit-plugins-deepgram
 livekit-plugins-openai
 livekit-plugins-silero
 
+dotenv
 Pillow

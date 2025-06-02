@@ -9,6 +9,7 @@ from livekit.plugins import deepgram, openai, silero
 from datetime import datetime
 import os
 
+from PIL import Image
 load_dotenv()
 
 logging.basicConfig(
@@ -31,21 +32,11 @@ class AssistantFnc(llm.FunctionContext):
         try:
             async for frame_event in video_stream:
                 self.latest_video_frame = frame_event.frame
+                print("frame", self.latest_video_frame)
                 logger.info(f"Received a frame from track {track.sid}")
                 break  # Process only the first frame
         except Exception as e:
             logger.error(f"Error processing video stream: {e}")
-
-    def save_frame_to_disk(self, frame) -> str:
-        """Save the video frame to disk and return the file path."""
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        file_path = f"image/image-{timestamp}.jpg"
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-        pil_image = frame.to_image()
-        pil_image.save(file_path, format="JPEG")
-        logger.info(f"Saved image to {file_path}")
-        return file_path
 
     @llm.ai_callable()
     async def capture_and_add_image(self) -> str:
@@ -68,7 +59,6 @@ class AssistantFnc(llm.FunctionContext):
             chat_image = llm.ChatImage(image=self.latest_video_frame)
 
             self.chat_ctx.append(images=[chat_image], role="user")
-            self.save_frame_to_disk(self.latest_video_frame)
             return f"Image captured and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
         except Exception as e:
             logger.error(f"Error in capture_and_add_image: {e}")
