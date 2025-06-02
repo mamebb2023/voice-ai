@@ -36,18 +36,17 @@ class AssistantFnc(llm.FunctionContext):
                 self.latest_video_frame = frame_event.frame
 
                 image = Image.frombytes(
-                    "RGB",
+                    self.latest_video_frame.type,
                     (self.latest_video_frame.width, self.latest_video_frame.height),
                     self.latest_video_frame.data,
-                    "raw",
-                    "RGBX",
-                    0,
-                    1,
                 )
+                print("\n\n\n\n\n\n")
+                print("image", image)
+                print("\n\n\n\n\n\n")
 
                 timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
                 filename = f"images/image-{timestamp}.jpg"
-                image.save(filename, "JPEG")
+                image.save(filename, "JPG")
 
                 logger.info(f"Received a frame from track {track.sid}")
                 break  # Process only the first frame
