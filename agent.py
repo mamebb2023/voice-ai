@@ -60,7 +60,7 @@ class AssistantFnc(llm.FunctionContext):
         try:
             async for frame_event in video_stream:
                 self.latest_video_frame = frame_event.frame
-                print("frame", self.latest_video_frame)
+                print("frame", frame_event)
                 logger.info(f"Received a frame from track {track.sid}")
                 # Save the image here
                 save_photo(self.latest_video_frame)
