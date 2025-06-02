@@ -89,7 +89,7 @@ class AssistantFnc(llm.FunctionContext):
             chat_image = llm.ChatImage(image=self.latest_video_frame)
 
             self.chat_ctx.append(images=[chat_image], role="user")
-            return f"Image captured and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height}"
+            return f"Image captured and added to context. Dimensions: {self.latest_video_frame.width}x{self.latest_video_frame.height} {self.latest_video_frame}"
         except Exception as e:
             logger.error(f"Error in capture_and_add_image: {e}")
             return f"Error: {e}"
